@@ -6,9 +6,11 @@ import vuetify from './plugins/vuetify';
 import { firestorePlugin } from 'vuefire'
 import { db } from '@/db'
 import VuetifyConfirm from 'vuetify-confirm'
+import Notifications from 'vue-notification'
+import moment from 'moment';
 
 Vue.use(firestorePlugin)
-Vue.use(require('vue-moment'))
+Vue.use(require('vue-moment'), { moment })
 Vue.use(VuetifyConfirm, {
   vuetify,
   buttonTrueText: 'Да',
@@ -19,6 +21,7 @@ Vue.use(VuetifyConfirm, {
   width: 350,
   property: '$confirm'
 })
+Vue.use(Notifications)
 
 Vue.config.productionTip = false
 

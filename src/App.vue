@@ -13,6 +13,7 @@
     <v-main>
       <Home />
     </v-main>
+    <notifications group="foo" />
   </v-app>
 </template>
 
