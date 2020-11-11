@@ -6,7 +6,7 @@
       color="green"
       class="progress-circular"
     ></v-progress-circular>
-    <v-expansion-panels accordion>
+    <v-expansion-panels accordion multiple>
       <v-expansion-panel
         v-for="(table, index) in tables"
         :key="index"
