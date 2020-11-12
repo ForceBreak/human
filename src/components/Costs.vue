@@ -8,8 +8,8 @@
     ></v-progress-circular>
     <v-expansion-panels accordion multiple>
       <v-expansion-panel
-        v-for="(table, index) in tables"
-        :key="index"
+        v-for="(table, tableIndex) in tables"
+        :key="tableIndex"
       >
         <v-expansion-panel-header>
           {{$moment(table.id.split('_').reverse().join('-')).locale('ru').format('MMMM - YYYY').toUpperCase()}}
@@ -21,7 +21,7 @@
             :items="table.items"
             sort-by="calories"
             class="elevation-1"
-            :class="{'mt-4': index > 0}"
+            :class="{'mt-4': tableIndex > 0}"
           >
             <template v-slot:top>
               <v-toolbar
@@ -76,21 +76,25 @@
                       <span class="headline">{{ formTitle }}</span>
                     </v-card-title>
 
-                    <v-card-text>
+                    <v-card-text class="pb-0">
                       <v-container>
                         <v-row>
-                          <v-col
-                            cols="12"
-                            sm="6"
-                            md="4"
+                          <template
                             v-for="item in addColumnTable"
-                            :key="item.label"
                           >
-                            <v-text-field
-                              v-model="item.value"
-                              :label="item.label"
-                            ></v-text-field>
-                          </v-col>
+                            <v-col
+                              v-if="item.name != 'presentNumber'"
+                              :key="item.label"
+                              cols="12"
+                              sm="6"
+                              md="4"
+                            >
+                              <v-text-field
+                                v-model="item.value"
+                                :label="item.label"
+                              ></v-text-field>
+                            </v-col>
+                          </template>
                         </v-row>
                       </v-container>
                     </v-card-text>
@@ -375,13 +379,29 @@
         
       },
 
+      countOrders(){
+        let orders = this.addColumnTable.filter(elem => elem.name.indexOf('_') != -1)
+        let sum = 0
+        orders.forEach(elem => sum += Number(elem.value))
+        return sum
+      },
+
       async save () {
         this.loading = true
+
         let neededTable = this.tables.find(elem => elem.id == this.addColumnTableId)
         if(this.editItemIndex || this.editItemIndex == 0){
-            this.addColumnTable.forEach(elem => {
-              neededTable.items[this.editItemIndex][elem.name] = elem.value
-            })
+          let oredersSum = this.countOrders()
+
+          let startNumberIndex = this.addColumnTable.findIndex(elem => elem.name == 'startNumber')
+          let presentNumberIndex = this.addColumnTable.findIndex(elem => elem.name == 'presentNumber')
+          let finishedIndex = this.addColumnTable.findIndex(elem => elem.name == 'finished')
+          this.addColumnTable[presentNumberIndex].value = 
+            Number(this.addColumnTable[startNumberIndex].value) +
+            oredersSum -
+            Number(this.addColumnTable[finishedIndex].value)
+
+          this.addColumnTable.forEach(elem => neededTable.items[this.editItemIndex][elem.name] = elem.value)
         }else{
           let itemToSave = {}
           this.addColumnTable.forEach(elem => {
@@ -422,7 +442,7 @@
         table.items.forEach(elem => {
           this.addColumnTable.push({
             label: elem.name,
-            value: 0
+            value: ''
           })
         })
         this.addColumnTableId = table.id
@@ -479,15 +499,34 @@
       async addNewMonth(){
         if(this.$refs.newMonthForm.validate()){
           this.loading = true
+          let allCosts = await this.$db
+                .collection('costs')
+                .get()
+          let allCostsIds = allCosts.docs.map(item => item.id.split('_').reverse().join('-'))
+          allCostsIds = allCostsIds.filter(elem => this.$moment(elem).isBefore(`${this.newMonthYearNumber}-${this.newMonthNumber}-01`))
+
           let baseCosts = (await this.$db
                 .collection('baseCosts')
                 .doc('3O53Q1e572GtN7ujVz79')
                 .get()).data()
+          
+          if(allCostsIds.length){
+            let itemToGetStartNumber = allCosts.docs.find(elem => elem.id == allCostsIds[allCostsIds.length - 1].split('-').reverse().join('_'))
+            itemToGetStartNumber = itemToGetStartNumber.data()
+            let justForIteration = {}
+            baseCosts.items.forEach(elem => {
+              justForIteration = itemToGetStartNumber.items.find(item => item.name == elem.name)
+              elem.startNumber = Number(justForIteration.presentNumber)
+            })
+          }
+          
           await this.$db
                 .collection('costs')
                 .doc(this.$moment(`${this.newMonthYearNumber}-${this.newMonthNumber}-01`).format('DD_MM_YYYY'))
                 .set(baseCosts)
+
           await this.getCosts()
+
           this.$notify({
             group: 'foo',
             type: 'success',
@@ -523,7 +562,8 @@
 
       showNewMonthTemplate(arg){
         this.newMonthTemplate = arg
-      }
+      },
+
     },
 
     computed: {
