@@ -517,6 +517,7 @@
             baseCosts.items.forEach(elem => {
               justForIteration = itemToGetStartNumber.items.find(item => item.name == elem.name)
               elem.startNumber = Number(justForIteration.presentNumber)
+              elem.presentNumber = Number(justForIteration.presentNumber)
             })
           }
           
