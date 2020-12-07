@@ -6,27 +6,22 @@
       dark
     >
       <div class="d-flex align-center">
-        HUMAN
+        <v-btn to="/" color="primary">
+          HUMAN
+        </v-btn>
       </div>
     </v-app-bar>
 
     <v-main>
-      <Home />
+      <router-view></router-view>
     </v-main>
     <notifications group="foo" />
   </v-app>
 </template>
 
 <script>
-import Home from './views/Home';
-
 export default {
   name: 'App',
-
-  components: {
-    Home,
-  },
-
   data: () => ({
     //
   }),
